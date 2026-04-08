@@ -2,7 +2,7 @@ name: Build and Deploy Pulse-Check API
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # We zip the contents of the current directory into release.zip
       # Ensuring requirements.txt is at the top level of the ZIP
@@ -37,9 +37,19 @@ jobs:
         with:
           name: python-app
 
-      - name: 'Deploy to Azure Web App'
+      - name: Unzip artifact
+        run: |
+          mkdir -p deploy
+          unzip release.zip -d deploy
+
+      - name: "Deploy to Azure Web App"
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'PulseCheckAPI'
+          app-name: "pulse-check-app"
+      - name: "Deploy to Azure Web App"
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "PulseCheckAPI"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: release.zip
