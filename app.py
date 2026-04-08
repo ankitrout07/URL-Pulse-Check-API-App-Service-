@@ -1,19 +1,33 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-import os
 from datetime import datetime
+from typing import List
+
+from fastapi import Depends, FastAPI
+from pydantic import BaseModel, Field
+from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy.orm import Session
+
+from database import Base, engine, get_db
 
 app = FastAPI()
 
-# Database Connection (Environment variables used for App Service)
-DB_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DB_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# Ensure the table exists before serving requests.
+Base.metadata.create_all(bind=engine)
 
-# Schema
+class HealthCheckCreate(BaseModel):
+    service: str = Field(..., max_length=50)
+    code: int
+    latency: float
+
+class HealthCheckRead(BaseModel):
+    id: int
+    service_name: str
+    status_code: int
+    latency_ms: float
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
+
 class HealthCheck(Base):
     __tablename__ = "health_logs"
     id = Column(Integer, primary_key=True, index=True)
@@ -22,19 +36,22 @@ class HealthCheck(Base):
     latency_ms = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-Base.metadata.create_all(bind=engine)
-
-@app.get("/")
+@app.get("/", response_model=dict)
 def read_root():
     return {"status": "Pulse-Check API is running"}
 
-@app.post("/log-health")
-def log_health(service: str, code: int, latency: float, db: Session = Depends(lambda: SessionLocal())):
-    new_log = HealthCheck(service_name=service, status_code=code, latency_ms=latency)
+@app.post("/log-health", response_model=dict)
+def log_health(payload: HealthCheckCreate, db: Session = Depends(get_db)):
+    new_log = HealthCheck(
+        service_name=payload.service,
+        status_code=payload.code,
+        latency_ms=payload.latency,
+    )
     db.add(new_log)
     db.commit()
-    return {"message": "Log saved successfully"}
+    db.refresh(new_log)
+    return {"message": "Log saved successfully", "id": new_log.id}
 
-@app.get("/history")
-def get_history(db: Session = Depends(lambda: SessionLocal())):
+@app.get("/history", response_model=List[HealthCheckRead])
+def get_history(db: Session = Depends(get_db)):
     return db.query(HealthCheck).order_by(HealthCheck.timestamp.desc()).limit(10).all()
