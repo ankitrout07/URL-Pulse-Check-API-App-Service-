@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Web App
+name: Build and Deploy Python App
 
 on:
   push:
@@ -9,11 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python_version: '3.11'
@@ -24,6 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Zip artifact for deployment
+        # We exclude infra and git to keep the package small
         run: zip -r release.zip . -x "infra/*" ".git/*" "venv/*" "__pycache__/*"
 
       - name: Upload artifact for deployment job
@@ -35,10 +35,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
@@ -47,8 +43,7 @@ jobs:
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
-          app-name: 'pulse-check-app' # Ensure this matches your Terraform app name
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-name: 'pulse-check-app'
+          publish-profile: \${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: release.zip
