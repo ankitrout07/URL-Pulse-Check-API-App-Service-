@@ -5,6 +5,14 @@ terraform {
       version = "~> 3.0"
     }
   }
+
+  # TODO: Uncomment and configure for remote state storage
+  # backend "azurerm" {
+  #   resource_group_name  = "tfstate-rg"
+  #   storage_account_name = "yourstatesa"
+  #   container_name       = "tfstate"
+  #   key                  = "pulse-check.tfstate"
+  # }
 }
 
 provider "azurerm" {
@@ -48,6 +56,7 @@ resource "azurerm_linux_web_app" "app" {
     application_stack {
       python_version = "3.11"
     }
+    app_command_line = "uvicorn app.main:app --host 0.0.0.0 --port 8000"
   }
 
   app_settings = {
