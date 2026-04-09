@@ -66,3 +66,19 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
 }
+resource "azurerm_postgresql_flexible_server" "db" {
+  name                   = "pulse-check-db"
+  resource_group_name    = azurerm_resource_group.rg.name
+  location               = azurerm_resource_group.rg.location
+  
+  # Ensure this zone is either the current standby zone 
+  # or match the existing primary zone in the portal
+  zone                   = "1" 
+
+  high_availability {
+    mode                      = "ZoneRedundant"
+    standby_availability_zone = "2"
+  }
+  
+  # ... other settings
+}
