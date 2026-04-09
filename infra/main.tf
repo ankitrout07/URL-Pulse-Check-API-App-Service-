@@ -5,7 +5,7 @@ terraform {
       version = "~> 3.0"
     }
   }
-  
+
 }
 
 provider "azurerm" {
@@ -36,9 +36,9 @@ resource "azurerm_postgresql_flexible_server" "db" {
   administrator_password = var.db_password
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
-  
+
   # Explicitly defining zone bypasses the Terraform provider HA bug
-  zone                   = "1"
+  zone = "1"
 
   # NOTE: High Availability (ZoneRedundant) is NOT supported on the 
   # B_Standard_B1ms SKU/tier which is default for student accounts. 
@@ -64,9 +64,9 @@ resource "azurerm_linux_web_app" "app" {
   }
 
   app_settings = {
-    "DATABASE_URL"                    = "postgresql://${var.db_admin_user}:${var.db_password}@${azurerm_postgresql_flexible_server.db.fqdn}:5432/postgres?sslmode=require"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT"  = "false"
-    "WEBSITE_RUN_FROM_PACKAGE"        = "0"
+    "DATABASE_URL"                   = "postgresql://${var.db_admin_user}:${var.db_password}@${azurerm_postgresql_flexible_server.db.fqdn}:5432/postgres?sslmode=require"
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
+    "WEBSITE_RUN_FROM_PACKAGE"       = "0"
   }
 }
 
