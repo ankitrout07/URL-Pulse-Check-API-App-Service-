@@ -37,9 +37,6 @@ resource "azurerm_postgresql_flexible_server" "db" {
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
 
-  # Explicitly defining zone bypasses the Terraform provider HA bug
-  zone = "1"
-
   # NOTE: High Availability (ZoneRedundant) is NOT supported on the 
   # B_Standard_B1ms SKU/tier which is default for student accounts. 
   # It is commented out here to prevent Azure deployment errors.
@@ -47,6 +44,13 @@ resource "azurerm_postgresql_flexible_server" "db" {
   #   mode                      = "ZoneRedundant"
   #   standby_availability_zone = "2"
   # }
+
+  lifecycle {
+    ignore_changes = [
+      zone,
+      high_availability.0.standby_availability_zone
+    ]
+  }
 }
 
 # App Service
